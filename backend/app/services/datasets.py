@@ -71,6 +71,8 @@ def create(sc_id: int) -> dict:
                 "target": copy.deepcopy(cfg["target"]), "furnace": sc.furnace, "path": str(out_dir)}
         (out_dir / "manifest.json").write_text(json.dumps({"code": code, **conf, "stats": stats},
                                                           ensure_ascii=False, indent=2, default=str), "utf-8")
+        from .versions import advance
+        advance(sc, "分工况")
         ds = db.Dataset(scenario_id=sc.id, code=code, rule_code=rule_code, config=conf, stats=stats, used_by=[])
         s.add(ds)
         s.flush()

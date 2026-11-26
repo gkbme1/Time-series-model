@@ -69,6 +69,18 @@ class Dataset(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
 
 
+class ConfigVersion(Base):
+    """工况方案 WC-vN、输入量配置 F-vN 等配置快照。"""
+    __tablename__ = "config_versions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"))
+    kind: Mapped[str] = mapped_column(String(10))  # WC / F
+    code: Mapped[str] = mapped_column(String(20))
+    content: Mapped[dict] = mapped_column(JSON)
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
+
+
 class CalibImport(Base):
     """用户导入的校核数据文件（内容另存为 Parquet）。"""
     __tablename__ = "calib_imports"
@@ -114,5 +126,5 @@ def touch_json(obj, attr="config"):
     flag_modified(obj, attr)
 
 
-__all__ = ["Project", "Scenario", "RuleVersion", "Dataset", "CalibImport", "session", "init", "select", "now",
+__all__ = ["Project", "Scenario", "RuleVersion", "Dataset", "CalibImport", "ConfigVersion", "session", "init", "select", "now",
            "touch_json"]

@@ -85,6 +85,9 @@ def seed():
     sc = create_scenario(pid, "1号炉 炉管壁温软测量", "cracking_tmt", "BA-101", "软测量")
     with db.session() as s:
         sc = s.get(db.Scenario, sc.id)
+        from .spec import regime_cfg
+        # Demo 预置：上一次烧焦在数据起点之前结束（来自运行记录），第一个周期起点早于数据起点
+        regime_cfg(sc)["cycle0_start"] = "2025-12-13 00:00"
         sc.config["data"]["excludes"] = [
             {"start": "2026-03-08", "end": "2026-03-21", "reason": "停炉检修"},
             {"start": "2026-06-14", "end": "2026-06-16", "reason": "DCS 升级，数据中断"},

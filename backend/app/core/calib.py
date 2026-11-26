@@ -79,16 +79,20 @@ def calib_rules_default(target: dict) -> dict:
     }
 
 
-def tc_samples(raw: np.ndarray, index: pd.DatetimeIndex, crules: dict) -> pd.DataFrame:
-    """连续热电偶 → 每小时整点样本。失效判定：超范围、冻结、1 分钟跳变过大（只看历史）。"""
-    rules = {
+def tc_rules(crules: dict) -> dict:
+    """连续热电偶的失效判定：超范围、冻结、1 分钟跳变过大（只看历史）。"""
+    return {
         "range": crules.get("range", {"on": False}),
         "freeze": {"on": True, "minutes": 30, "tol": 0.01, "action": 1},
         "spike": {"on": crules.get("tc_fail", {}).get("on", True), "window": 3,
                   "jump": crules.get("tc_fail", {}).get("jump", 30), "action": 0},
         "fill": {"on": False},
     }
-    res = quality.apply_rules(raw, rules)
+
+
+def tc_samples(raw: np.ndarray, index: pd.DatetimeIndex, crules: dict) -> pd.DataFrame:
+    """连续热电偶 → 每小时整点样本。"""
+    res = quality.apply_rules(raw, tc_rules(crules))
     on_hour = index.minute == 0
     ok = on_hour & res.usable
     return pd.DataFrame({"t": index[ok], "y": res.value[ok], "n": 1})

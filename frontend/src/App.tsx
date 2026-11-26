@@ -10,6 +10,8 @@ import Wizard from "./pages/Wizard";
 import Templates from "./pages/Templates";
 import DataPage from "./pages/Data";
 import Placeholder from "./pages/Placeholder";
+import RegimePage from "./pages/Regime";
+import FeaturePage from "./pages/Feature";
 
 const LS = "tsm.project";
 export const tgLabel = (g?: Target) =>
@@ -75,6 +77,8 @@ export default function App() {
   else if (route.cur === "proj") page = <ProjectPage project={proj!} />;
   else if (route.cur === "sov") page = <ScenarioOverview sc={sc!} />;
   else if (route.cur === "data") page = <DataPage sid={sc!.id} key={sc!.id} />;
+  else if (route.cur === "regime") page = <RegimePage sid={sc!.id} key={sc!.id} />;
+  else if (route.cur === "feature") page = <FeaturePage sid={sc!.id} key={sc!.id} />;
   else page = <Placeholder name={FN_NAME[route.cur]} />;
 
   return (

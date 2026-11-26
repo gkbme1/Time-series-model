@@ -331,19 +331,27 @@ def overview(sid: int):
         dss = list(s.scalars(select(db.Dataset).where(db.Dataset.scenario_id == sid).order_by(db.Dataset.id.desc())))
         rvs = list(s.scalars(select(db.RuleVersion).where(db.RuleVersion.scenario_id == sid)))
     d = sc.config["data"]
+    from ..services import regime_page, spec as sp
+    from ..core import pipeline
+    ci = STAGES.index(sc.stage) if sc.stage in STAGES else 0
     info = [f"{len(d.get('tags', []))} 个参数 · {d['start'][:7]} 至 {d['end'][:7]}" +
             (f" · 最新 {dss[0].code}" if dss else " · 尚未生成数据版本")] + ["未开始"] * (len(STAGES) - 1)
-    ci = STAGES.index(sc.stage) if sc.stage in STAGES else 0
+    if ci >= 1:
+        info[1] = regime_page.info_line(sc) + (f" · {sc.config['regime'].get('code')}" if sc.config.get("regime", {}).get("code") else "")
+    if ci >= 2:
+        ncol = len([c for c in pipeline.columns(sp.build_spec(sc)) if not c.get("excluded")])
+        info[2] = f"{ncol} 个输入" + (f" · {sc.config['features'].get('code')}" if sc.config.get("features", {}).get("code") else "")
     return {
         "stages": [{"name": n, "state": "done" if i < ci else "cur" if i == ci else "todo", "info": info[i]}
                    for i, n in enumerate(STAGES)],
         "definition": [["场景模板", data_template_name(sc)], ["建模类型", sc.type],
                        ["设备", sc.furnace], ["校核数据来源", "TMT 热电偶 / 红外测温"],
                        ["输出", "当前估计值 + P10–P90 区间" if sc.type == "软测量" else "未来值"],
-                       ["适用工况", "待分工况后确定"]],
+                       ["适用工况", "、".join(c["name"] for c in sc.config.get("regime", {}).get("classes", []) if c.get("include")) or "待分工况后确定"]],
         "assets": [["数据版本", f"{len(dss)} 个" + (f"（最新 {dss[0].code}）" if dss else "")],
                    ["数据处理规则", sc.config.get("rules_code") or "—"], ["规则版本数", f"{len(rvs)} 个"],
-                   ["工况方案", "—"], ["输入量配置", "—"], ["训练次数", "0 次"], ["模型版本", "—"],
+                   ["工况方案", sc.config.get("regime", {}).get("code") or "—"],
+                   ["输入量配置", sc.config.get("features", {}).get("code") or "—"], ["训练次数", "0 次"], ["模型版本", "—"],
                    ["检验报告", "—"], ["投用位置", "—"]],
     }
 
