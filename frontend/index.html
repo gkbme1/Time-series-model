@@ -8,5 +8,16 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // 页面脚本若没能运行（例如浏览器版本过旧、文件类型被拦截），给出提示而不是一片空白
+      setTimeout(function () {
+        var r = document.getElementById("root");
+        if (r && !r.firstChild) {
+          r.innerHTML = '<div style="max-width:640px;margin:80px auto;padding:20px;border:1px solid #e1e4e8;border-radius:10px;background:#fff;font:15px/1.7 sans-serif;color:#1a1f24">' +
+            '<b>页面脚本没有运行</b><br>请按 F12 打开"控制台（Console）"，把红色报错截图发给开发人员。' +
+            '<br>建议使用新版 Chrome 或 Edge 浏览器。</div>';
+        }
+      }, 8000);
+    </script>
   </body>
 </html>

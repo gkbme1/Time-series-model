@@ -58,7 +58,7 @@ echo.
 echo Starting server: http://127.0.0.1:%PORT%   (press Ctrl+C to stop)
 start "" /min cmd /c "timeout /t 5 >nul & start http://127.0.0.1:%PORT%"
 cd backend
-"..\%PY%" -m uvicorn app.main:app --host 127.0.0.1 --port %PORT%
+"..\%PY%" -m uvicorn app.main:app --host 127.0.0.1 --port %PORT% --no-use-colors
 goto :eof
 
 :nopython
