@@ -7,3 +7,4 @@ a.link{color:var(--teal);cursor:pointer;text-decoration:underline}
 .kpi .v.na{color:var(--mute);font-size:22px}
 .err{color:var(--bad)}
 .tpl{display:flex;flex-direction:column;justify-content:flex-start}
+button:disabled{opacity:.5;cursor:not-allowed}button.pri:disabled{filter:none}

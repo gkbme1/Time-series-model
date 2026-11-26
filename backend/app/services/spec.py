@@ -46,30 +46,33 @@ def regime_cfg(sc) -> dict:
     return rg
 
 
-def rule_labels(sc, causal=False) -> np.ndarray:
-    rg = regime_cfg(sc)
-    return cx.regime_labels(sc.furnace, rg["rules"], sc.config["rules"], sc.template_id, causal=causal)
+def rule_labels(sc, causal=False, rg: dict | None = None, rules: dict | None = None) -> np.ndarray:
+    rg = rg or regime_cfg(sc)
+    return cx.regime_labels(sc.furnace, rg["rules"], rules if rules is not None else sc.config["rules"],
+                            sc.template_id, causal=causal)
 
 
-def final_labels(sc) -> tuple[np.ndarray, np.ndarray]:
-    """最终工况（离线，用于选训练数据和分组统计）：手动 > 已确认的自动发现 > 规则。"""
-    rg = regime_cfg(sc)
+def final_labels(sc, rg: dict | None = None, rules: dict | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """最终工况（离线，用于选训练数据和分组统计）：手动 > 已确认的自动发现 > 规则。
+    rg / rules 可传入某个版本的快照（训练批次引用的 WC-vN、R-vN）。"""
+    rg = rg or regime_cfg(sc)
+    rules = rules if rules is not None else sc.config["rules"]
     key = (sc.furnace, h([rg["rules"], [a for a in rg["auto"] if a.get("st") == "ok"], rg["manual"]]),
-           h({t: cx.core_rules(r) for t, r in sc.config["rules"].items() if t != "__calib__"}))
+           h({t: cx.core_rules(r) for t, r in rules.items() if t != "__calib__"}))
     hit = _lcache.get(key)
     if hit is not None:
         return hit
-    lab, src = regime.combine(rule_labels(sc), cx.index(sc.furnace), rg["auto"], rg["manual"])
+    lab, src = regime.combine(rule_labels(sc, rg=rg, rules=rules), cx.index(sc.furnace), rg["auto"], rg["manual"])
     return _lcache.put(key, (lab, src))
 
 
-def included_ids(sc) -> set[str]:
-    return {c["id"] for c in regime_cfg(sc)["classes"] if c.get("include")}
+def included_ids(sc, rg: dict | None = None) -> set[str]:
+    return {c["id"] for c in (rg or regime_cfg(sc))["classes"] if c.get("include")}
 
 
-def cycles(sc) -> list[dict]:
-    rg = regime_cfg(sc)
-    lab, _ = final_labels(sc)
+def cycles(sc, rg: dict | None = None, rules: dict | None = None) -> list[dict]:
+    rg = rg or regime_cfg(sc)
+    lab, _ = final_labels(sc, rg, rules)
     idx = cx.index(sc.furnace)
     end = pd.Timestamp(sc.config["data"]["end"]) + pd.Timedelta(days=1) - pd.Timedelta(minutes=1)
     return regime.cycles(lab, idx, rg["cycle_mode"], rg.get("cycle0_start"), min(end, idx[-1]))
@@ -102,16 +105,20 @@ def param_spec(sc, tag: str) -> dict:
     return F.default_param_spec(name, _tpl(sc).get("features_default", {}).get(name))
 
 
-def build_spec(sc) -> pipeline.Spec:
+def build_spec(sc, rules_override: dict | None = None, tags: list[str] | None = None,
+               feats: dict | None = None, rg: dict | None = None) -> pipeline.Spec:
+    """可传入版本快照：rules_override（R-vN）、tags（数据版本的参数清单）、feats（F-vN）、rg（WC-vN）。"""
     rows = cx.tag_rows(sc.furnace)
-    rg = regime_cfg(sc)
-    fc = features_cfg(sc)
-    tags = sc.config["data"]["tags"]
-    rules = {r["tag"]: cx.rules_for(sc.config["rules"], sc.furnace, r["tag"], sc.template_id)
+    rg = rg or regime_cfg(sc)
+    fc = feats or features_cfg(sc)
+    tags = list(tags) if tags is not None else sc.config["data"]["tags"]
+    src_rules = rules_override if rules_override is not None else sc.config["rules"]
+    rules = {r["tag"]: cx.rules_for(src_rules, sc.furnace, r["tag"], sc.template_id)
              for r in rows if not int(r["is_target"])}
     return pipeline.Spec(
         tags=list(tags), names={r["tag"]: r["name"] for r in rows}, units={r["tag"]: r["unit"] for r in rows},
-        rules=rules, params={t: param_spec(sc, t) for t in tags}, lags=fc["lags"], combos=fc["combos"],
+        rules=rules, params={t: (fc["params"].get(t) or param_spec(sc, t)) for t in tags}, lags=fc["lags"],
+        combos=fc["combos"],
         regime_rules=rg["rules"], cycle_mode=rg["cycle_mode"], cycle_anchor=rg.get("cycle0_start"))
 
 
@@ -121,9 +128,9 @@ def _cached_quality(furnace):
     return f
 
 
-def features_full(sc) -> tuple[pd.DataFrame, np.ndarray]:
+def features_full(sc, spec: pipeline.Spec | None = None) -> tuple[pd.DataFrame, np.ndarray]:
     """整段历史上的输入列（训练表从这里按校核时刻取行）。"""
-    spec = build_spec(sc)
+    spec = spec or build_spec(sc)
     key = (sc.furnace, h(spec.__dict__))
     hit = _fcache.get(key)
     if hit is not None:
@@ -131,3 +138,7 @@ def features_full(sc) -> tuple[pd.DataFrame, np.ndarray]:
     tags = pipeline.required_tags(spec)
     raw = cx.src().read(sc.furnace, tags)
     return _fcache.put(key, pipeline.build(raw, spec, _cached_quality(sc.furnace)))
+
+
+def versions_content(rg: dict) -> dict:
+    return {k: rg.get(k) for k in ("classes", "rules", "manual", "auto", "cycle_mode", "cycle0_start")}

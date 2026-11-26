@@ -12,12 +12,14 @@ import DataPage from "./pages/Data";
 import Placeholder from "./pages/Placeholder";
 import RegimePage from "./pages/Regime";
 import FeaturePage from "./pages/Feature";
+import LabPage from "./pages/Lab";
+import ValidatePage from "./pages/Validate";
 
 const LS = "tsm.project";
 export const tgLabel = (g?: Target) =>
   g ? `${g.name}（${g.type === "fc" ? "预测未来 " + g.horizons.join("/") + " 分钟" : "软测量"}）` : "";
 export const statusClass = (st: string) =>
-  ({ 在线运行: "t-ok", 验证中: "t-warn", 特征工程: "t-teal" } as Record<string, string>)[st] || "t-mute";
+  ({ 在线运行: "t-ok", 已发布: "t-ok", 验证中: "t-warn", 特征工程: "t-teal" } as Record<string, string>)[st] || "t-mute";
 const dotColor = (st: string) => ({ 在线运行: "#51cf66", 验证中: "#ffa94d", 特征工程: "#43b3bb" } as Record<string, string>)[st] || "#868e96";
 
 export default function App() {
@@ -79,6 +81,8 @@ export default function App() {
   else if (route.cur === "data") page = <DataPage sid={sc!.id} key={sc!.id} />;
   else if (route.cur === "regime") page = <RegimePage sid={sc!.id} key={sc!.id} />;
   else if (route.cur === "feature") page = <FeaturePage sid={sc!.id} key={sc!.id} />;
+  else if (route.cur === "lab") page = <LabPage sid={sc!.id} key={sc!.id} />;
+  else if (route.cur === "validate") page = <ValidatePage sid={sc!.id} key={sc!.id} />;
   else page = <Placeholder name={FN_NAME[route.cur]} />;
 
   return (

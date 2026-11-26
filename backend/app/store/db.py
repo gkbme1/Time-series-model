@@ -81,6 +81,62 @@ class ConfigVersion(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
 
 
+class TrainBatch(Base):
+    """一次"开始训练"= 一个批次，包含若干实验。"""
+    __tablename__ = "train_batches"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"))
+    code: Mapped[str] = mapped_column(String(20))  # 批次 N
+    ds_code: Mapped[str] = mapped_column(String(20))
+    rule_code: Mapped[str] = mapped_column(String(20))
+    wc_code: Mapped[str] = mapped_column(String(20))
+    f_code: Mapped[str] = mapped_column(String(20))
+    config: Mapped[dict] = mapped_column(JSON)
+    sig: Mapped[str] = mapped_column(String(40))
+    note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
+
+
+class Experiment(Base):
+    __tablename__ = "experiments"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    batch_id: Mapped[int] = mapped_column(ForeignKey("train_batches.id"))
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"))
+    code: Mapped[str] = mapped_column(String(20))  # EXP-01
+    mode: Mapped[str] = mapped_column(String(10))
+    algo: Mapped[str] = mapped_column(String(10))
+    params: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(20), default="排队中")  # 排队中 / 训练中 / 已完成 / 失败
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    stage_text: Mapped[str] = mapped_column(String(100), default="")
+    metrics: Mapped[dict] = mapped_column(JSON, default=dict)
+    importance: Mapped[list] = mapped_column(JSON, default=list)
+    label: Mapped[str] = mapped_column(String(40), default="")  # 待检验 / 已发布 XGB-V1 …
+    error: Mapped[str] = mapped_column(Text, default="")
+    path: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
+    finished_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class Candidate(Base):
+    """送去检验的候选模型版本（XGB-V1 …）及其检验报告、适用范围、审批状态。"""
+    __tablename__ = "candidates"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"))
+    exp_id: Mapped[int] = mapped_column(ForeignKey("experiments.id"))
+    code: Mapped[str] = mapped_column(String(20))
+    life: Mapped[str] = mapped_column(String(20), default="待检验")  # 开发中 / 待检验 / 检验通过 / 已发布 / 已归档
+    status: Mapped[str] = mapped_column(String(20), default="排队中")  # 检验计算状态
+    report_code: Mapped[str] = mapped_column(String(20), default="")
+    report: Mapped[dict] = mapped_column(JSON, default=dict)
+    appl: Mapped[dict] = mapped_column(JSON, default=dict)  # 适用范围（草稿 / 已审核）
+    history: Mapped[list] = mapped_column(JSON, default=list)
+    error: Mapped[str] = mapped_column(Text, default="")
+    package: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
+    published_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class CalibImport(Base):
     """用户导入的校核数据文件（内容另存为 Parquet）。"""
     __tablename__ = "calib_imports"
@@ -126,5 +182,5 @@ def touch_json(obj, attr="config"):
     flag_modified(obj, attr)
 
 
-__all__ = ["Project", "Scenario", "RuleVersion", "Dataset", "CalibImport", "ConfigVersion", "session", "init", "select", "now",
+__all__ = ["Project", "Scenario", "RuleVersion", "Dataset", "CalibImport", "ConfigVersion", "TrainBatch", "Experiment", "Candidate", "session", "init", "select", "now",
            "touch_json"]

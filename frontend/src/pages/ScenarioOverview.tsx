@@ -4,7 +4,7 @@ import { FNS } from "../router";
 import { tgLabel } from "../App";
 import { Spinner } from "../ui";
 
-type Ov = { stages: { name: string; state: string; info: string }[]; definition: [string, string][]; assets: [string, string][] };
+type Ov = { model: { code: string; published_at: string; mae: number | null; furnace: string } | null; stages: { name: string; state: string; info: string }[]; definition: [string, string][]; assets: [string, string][] };
 
 export default function ScenarioOverview({ sc }: { sc: ScenarioLite }) {
   const ov = useQuery({ queryKey: ["overview", sc.id], queryFn: () => api.get<Ov>(`/api/scenarios/${sc.id}/overview`) });
@@ -14,7 +14,7 @@ export default function ScenarioOverview({ sc }: { sc: ScenarioLite }) {
   );
   return (
     <div className="grid">
-      {kpi("当前在线模型", "尚未发布模型")}
+      {ov.data?.model ? <div className="c kpi s3"><div className="l">当前在线模型</div><div className="v">{ov.data.model.code}</div><div className="d">{ov.data.model.published_at} 发布 · 检验偏差 {ov.data.model.mae} ℃ · 待部署</div></div> : kpi("当前在线模型", "尚未发布模型")}
       {kpi("平均预测偏差（近 7 天）", "上线投用并有校核值后计算")}
       {kpi("适用范围内占比", "上线投用后计算")}
       {kpi("较大偏差次数（近 7 天）", "上线投用后计算")}

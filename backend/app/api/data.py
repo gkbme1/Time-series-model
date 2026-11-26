@@ -341,7 +341,27 @@ def overview(sid: int):
     if ci >= 2:
         ncol = len([c for c in pipeline.columns(sp.build_spec(sc)) if not c.get("excluded")])
         info[2] = f"{ncol} 个输入" + (f" · {sc.config['features'].get('code')}" if sc.config.get("features", {}).get("code") else "")
+    with db.session() as s2:
+        bs = list(s2.scalars(select(db.TrainBatch).where(db.TrainBatch.scenario_id == sid)))
+        exps = list(s2.scalars(select(db.Experiment).where(db.Experiment.scenario_id == sid)))
+        cands = list(s2.scalars(select(db.Candidate).where(db.Candidate.scenario_id == sid).order_by(db.Candidate.id)))
+    done = [e for e in exps if e.status == "已完成" and e.algo != "base" and (e.metrics or {}).get("mae") is not None]
+    if ci >= 3 and exps:
+        info[3] = f"已试 {len(exps)} 次" + (f" · 最好偏差 {min(e.metrics['mae'] for e in done):.1f} ℃" if done else "")
+    if ci >= 4 and cands:
+        c = cands[-1]
+        rep = (c.report or {}).get("rep", {})
+        info[4] = f"{c.code} {c.life}" + (f" · 偏差 {rep['mae']} ℃" if rep.get("mae") is not None else "")
+    online = next((c for c in cands if c.life == "已发布"), None)
+    if ci >= 5 and online:
+        info[5] = f"{online.code} 已发布，待部署（阶段 4）"
+    model_kpi = None
+    if online:
+        rep = (online.report or {}).get("rep", {})
+        model_kpi = {"code": online.code, "published_at": f"{online.published_at:%Y-%m-%d}" if online.published_at else "",
+                     "mae": rep.get("mae"), "furnace": sc.furnace}
     return {
+        "model": model_kpi,
         "stages": [{"name": n, "state": "done" if i < ci else "cur" if i == ci else "todo", "info": info[i]}
                    for i, n in enumerate(STAGES)],
         "definition": [["场景模板", data_template_name(sc)], ["建模类型", sc.type],
@@ -351,8 +371,9 @@ def overview(sid: int):
         "assets": [["数据版本", f"{len(dss)} 个" + (f"（最新 {dss[0].code}）" if dss else "")],
                    ["数据处理规则", sc.config.get("rules_code") or "—"], ["规则版本数", f"{len(rvs)} 个"],
                    ["工况方案", sc.config.get("regime", {}).get("code") or "—"],
-                   ["输入量配置", sc.config.get("features", {}).get("code") or "—"], ["训练次数", "0 次"], ["模型版本", "—"],
-                   ["检验报告", "—"], ["投用位置", "—"]],
+                   ["训练批次", f"{len(bs)} 批 · {len(exps)} 个实验"],
+                   ["输入量配置", sc.config.get("features", {}).get("code") or "—"], ["模型版本", "、".join(f"{c.code}（{c.life}）" for c in cands) or "—"],
+                   ["检验报告", f"{sum(1 for c in cands if c.report)} 份" if cands else "—"], ["投用位置", "—"]],
     }
 
 
