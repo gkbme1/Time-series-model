@@ -38,7 +38,7 @@ def manifest() -> list[dict]:
 
 
 def file_records(filename: str) -> pd.DataFrame:
-    df = pd.read_csv(config.DATA_DIR / "calib" / filename)
+    df = pd.read_csv(config.DATA_DIR / "calib" / filename, encoding="utf-8-sig")
     return normalize(df)
 
 

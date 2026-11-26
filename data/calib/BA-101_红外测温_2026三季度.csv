@@ -1,4 +1,4 @@
-measured_at,position,value,source,instrument,operator,status,entered_at
+﻿measured_at,position,value,source,instrument,operator,status,entered_at
 2026-07-01 00:40,出口段 1# 管,1061.3,巡检红外测温,红外高温计 IR-03,张工,有效,2026-10-08 09:40
 2026-07-01 00:41,出口段 2# 管,1045.9,巡检红外测温,红外高温计 IR-03,张工,有效,2026-10-08 09:40
 2026-07-01 00:43,出口段 3# 管,1047.2,巡检红外测温,红外高温计 IR-03,张工,有效,2026-10-08 09:40

@@ -8,36 +8,84 @@
 
 ## 一键启动
 
-需要 Python 3.11+、Node.js 18+。
+需要 **Python 3.11–3.13** 和 **Node.js 18+**。示例数据已随仓库提供，不需要重新生成。
+
+### Windows
+
+先安装：
+
+- Python：<https://www.python.org/downloads/>，安装时勾选 "Add python.exe to PATH"
+- Node.js：<https://nodejs.org/>，选 LTS 版本
+
+在仓库目录打开"命令提示符"或 PowerShell，运行：
+
+```bat
+scripts\start.bat
+```
+
+也可以在资源管理器里直接双击 `scripts\start.bat`。
+
+脚本会依次：在 `backend\.venv` 创建虚拟环境并安装依赖 → 构建前端 → 启动服务，几秒后自动打开浏览器
+<http://127.0.0.1:8000>。首次运行需要下载依赖，约几分钟；之后再启动只需几秒。按 Ctrl+C 停止。
+
+- 换端口：先 `set PORT=8080`，再运行 `scripts\start.bat`（PowerShell 里写 `$env:PORT=8080`）。
+- 前端代码改动后重新构建：先 `set REBUILD=1`，再运行 `scripts\start.bat`。
+- 依赖装坏了：删除 `backend\.venv` 文件夹后重新运行。
+
+### Linux / macOS
 
 ```bash
 ./scripts/start.sh
 ```
 
-浏览器打开 <http://127.0.0.1:8000>。脚本会：创建 `backend/.venv` 并安装依赖 → 如缺少示例数据则生成 →
-构建前端 → 启动后端（同时托管前端页面，单端口）。首次运行约需几分钟。
-
-常用变量：`PORT=8080 ./scripts/start.sh`；前端改动后 `REBUILD=1 ./scripts/start.sh`。
-
 ### 开发模式
 
-```bash
-cd backend && .venv/bin/uvicorn app.main:app --reload --port 8000
+后端（Windows）：
+
+```bat
+cd backend
+.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
 ```
 
+后端（Linux / macOS）：
+
 ```bash
-cd frontend && npm run dev
+cd backend && .venv/bin/python -m uvicorn app.main:app --reload --port 8000
+```
+
+前端（另开一个终端）：
+
+```bash
+cd frontend
+npm run dev
 ```
 
 开发时访问 <http://127.0.0.1:5173>（`/api` 代理到 8000）。
 
 ### 测试
 
+Windows：
+
+```bat
+cd backend
+.venv\Scripts\python -m pytest -q tests
+```
+
+Linux / macOS：
+
 ```bash
 cd backend && .venv/bin/python -m pytest -q tests
 ```
 
 ### 重新生成示例数据
+
+Windows：
+
+```bat
+backend\.venv\Scripts\python scripts\gen_demo_data.py
+```
+
+Linux / macOS：
 
 ```bash
 backend/.venv/bin/python scripts/gen_demo_data.py
@@ -72,4 +120,4 @@ docs/                      各阶段说明与截图
 | `data/lag_refs/*.json` | `{位号: {"dead_time": 分钟, "tau": 分钟}}`，另有 `_meta` 说明来源 |
 | `data/templates/*.json` | 场景模板 |
 
-所有时间均为本地时间（不带时区）。
+所有时间均为本地时间（不带时区）。CSV 用带 BOM 的 UTF-8 保存，Windows 上用 Excel 直接打开不会乱码；导入校核数据时 UTF-8 和 GBK 编码都支持。

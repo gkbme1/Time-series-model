@@ -1,0 +1,4 @@
+*.bat text eol=crlf
+*.parquet binary
+*.png binary
+*.sh text eol=lf

@@ -114,6 +114,14 @@
 
 ## 5. 怎么验证
 
+Windows 下运行（或直接双击该文件）：
+
+```bat
+scripts\start.bat
+```
+
+Linux / macOS 下运行：
+
 ```bash
 ./scripts/start.sh
 ```
@@ -124,7 +132,14 @@
 2. 在预览里勾选"炉膛温度"，用滚轮放大到某一周，可以看到红色的冻结段和橙色的尖峰点。
 3. 点"生成训练数据"，得到 DS-v1，表中显示它对应的规则版本。
 
-后端测试：
+后端测试（Windows）：
+
+```bat
+cd backend
+.venv\Scripts\python -m pytest -q tests
+```
+
+后端测试（Linux / macOS）：
 
 ```bash
 cd backend && .venv/bin/python -m pytest -q tests

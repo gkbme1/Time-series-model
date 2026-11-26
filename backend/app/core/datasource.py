@@ -39,7 +39,7 @@ class FileDataSource(DataSource):
 
     def tag_table(self) -> pd.DataFrame:
         if self._tags is None:
-            t = pd.read_csv(self.dir / "tags.csv", dtype={"part": str}).fillna({"part": ""})
+            t = pd.read_csv(self.dir / "tags.csv", dtype={"part": str}, encoding="utf-8-sig").fillna({"part": ""})
             self._tags = t
         return self._tags
 

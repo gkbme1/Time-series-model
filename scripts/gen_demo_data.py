@@ -643,7 +643,7 @@ def main():
         wide.reset_index().to_parquet(out / "timeseries" / f"{cfg.unit}.parquet", index=False)
         truth.reset_index().to_parquet(out / "_truth" / f"{cfg.unit}_truth.parquet", index=False)
         pd.DataFrame(log, columns=["tag", "kind", "start", "minutes"]).to_csv(
-            out / "_truth" / f"{cfg.unit}_quality_log.csv", index=False)
+            out / "_truth" / f"{cfg.unit}_quality_log.csv", index=False, encoding="utf-8-sig")
         tag_rows += tags_rows(cfg)
         summary[cfg.unit] = {
             "cycle_starts": [str(START + pd.Timedelta(minutes=c)) for c in cycle_starts],
@@ -668,17 +668,17 @@ def main():
             ]
             for fn, a, b, seed, ent, note, use, role in files:
                 df = gen_ir(cfg, truth, a, b, seed, ent)
-                df.to_csv(out / "calib" / fn, index=False)
+                df.to_csv(out / "calib" / fn, index=False, encoding="utf-8-sig")
                 sources.append(dict(file=fn, furnace=cfg.unit, kind="红外", source="巡检红外测温", note=note,
                                     default_use=use, role=role, rows=len(df)))
             mt = gen_maint(cfg, 15)
-            mt.to_csv(out / "calib" / "BA-101_检修测温_2026-03.csv", index=False)
+            mt.to_csv(out / "calib" / "BA-101_检修测温_2026-03.csv", index=False, encoding="utf-8-sig")
             sources.append(dict(file="BA-101_检修测温_2026-03.csv", furnace=cfg.unit, kind="红外", source="检修测温",
                                 note="停炉期间测量，不代表运行状态，不建议用于训练", default_use=False, role="train",
                                 rows=len(mt)))
         else:
             df = gen_ir(cfg, truth, "2026-08-01", "2026-11-30", 41, None)
-            df.to_csv(out / "calib" / "BA-104_红外测温_2026.csv", index=False)
+            df.to_csv(out / "calib" / "BA-104_红外测温_2026.csv", index=False, encoding="utf-8-sig")
             sources.append(dict(file="BA-104_红外测温_2026.csv", furnace=cfg.unit, kind="红外", source="巡检红外测温",
                                 note="4 号炉巡检记录，跨炉检验用", default_use=True, role="cross", rows=len(df)))
 
@@ -689,7 +689,7 @@ def main():
             note="每小时取整点值，热电偶失效时段自动剔除", default_use=True, role="train", rows=None,
             position="出口段 1# 管"))
 
-    pd.DataFrame(tag_rows).to_csv(out / "tags.csv", index=False)
+    pd.DataFrame(tag_rows).to_csv(out / "tags.csv", index=False, encoding="utf-8-sig")
     (out / "calib" / "_sources.json").write_text(json.dumps(sources, ensure_ascii=False, indent=2), "utf-8")
 
     (out / "lag_refs" / "BA-101_APC模型参数_2024-05.json").write_text(json.dumps({

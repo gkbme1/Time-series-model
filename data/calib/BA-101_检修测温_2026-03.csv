@@ -1,4 +1,4 @@
-measured_at,position,value,source,instrument,operator,status,entered_at
+﻿measured_at,position,value,source,instrument,operator,status,entered_at
 2026-03-09 09:40,辐射段 7# 管,78.1,检修测温,红外高温计 IR-05,检修组,有效,2026-03-23 10:00
 2026-03-09 09:10,辐射段 6# 管,106.4,检修测温,红外高温计 IR-05,检修组,有效,2026-03-23 10:00
 2026-03-09 15:49,辐射段 8# 管,78.2,检修测温,红外高温计 IR-05,检修组,有效,2026-03-23 10:00
