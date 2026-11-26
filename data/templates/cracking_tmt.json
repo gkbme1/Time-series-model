@@ -1,0 +1,355 @@
+{
+  "id": "cracking_tmt",
+  "name": "裂解炉 · 炉管壁温",
+  "version": "1.3",
+  "desc": "用燃料气、COT、稀释蒸汽等估算 TMT，校核数据来自热电偶或红外测温",
+  "tags": [
+    "软测量",
+    "12 个变量角色",
+    "4 类工况"
+  ],
+  "device_type": "裂解炉",
+  "calib_label": "TMT 热电偶 / 红外测温（稀疏）",
+  "split": "按运行周期",
+  "target": {
+    "name": "炉管壁温 · 出口段平均",
+    "type": "soft",
+    "unit": "℃",
+    "lo": 850,
+    "hi": 1130,
+    "pick": "avg",
+    "output_tag": "TMT{k}01_SS",
+    "target_param": "炉管壁温"
+  },
+  "roles": {
+    "燃料气流量": "操作量",
+    "原料流量": "负荷",
+    "稀释蒸汽流量": "操作量",
+    "横跨段温度": "过程温度",
+    "炉膛温度": "过程温度",
+    "出口温度": "被控量 COT",
+    "炉管压降": "结焦指示",
+    "烟气氧含量": "燃烧状态",
+    "原料密度": "原料性质",
+    "烧焦空气阀开度": "工况判定",
+    "急冷锅炉出口温度": "结焦指示",
+    "炉管壁温": "目标"
+  },
+  "recommended": [
+    "燃料气流量",
+    "原料流量",
+    "稀释蒸汽流量",
+    "横跨段温度",
+    "炉膛温度",
+    "出口温度",
+    "炉管压降",
+    "烟气氧含量"
+  ],
+  "rules_default": {
+    "range": {
+      "on": true,
+      "action": 0
+    },
+    "freeze": {
+      "on": true,
+      "minutes": 30,
+      "action": 0
+    },
+    "spike": {
+      "on": true,
+      "window": 5,
+      "action": 0
+    },
+    "fill": {
+      "on": true,
+      "max_minutes": 2,
+      "long_minutes": 10,
+      "action": 0
+    },
+    "decoke": {
+      "on": true,
+      "action": 0
+    }
+  },
+  "rules_override": {
+    "炉膛温度": {
+      "freeze": {
+        "tol": 0.1
+      },
+      "spike": {
+        "jump": 35
+      }
+    },
+    "炉膛温度（东侧）": {
+      "freeze": {
+        "tol": 0.1
+      },
+      "spike": {
+        "jump": 35
+      }
+    },
+    "炉管压降": {
+      "freeze": {
+        "minutes": 60,
+        "tol": 0.05
+      },
+      "spike": {
+        "jump": 25
+      },
+      "fill": {
+        "max_minutes": 10
+      },
+      "smooth": {
+        "on": false,
+        "minutes": 5
+      }
+    },
+    "烧焦空气阀开度": {
+      "freeze": {
+        "on": false
+      },
+      "spike": {
+        "on": false
+      }
+    },
+    "原料密度": {
+      "freeze": {
+        "minutes": 120
+      }
+    }
+  },
+  "calib_rules": {
+    "range": true,
+    "tc_fail": true,
+    "align": true,
+    "decoke": true
+  },
+  "regime_classes": [
+    {
+      "id": "norm",
+      "name": "正常稳定",
+      "color": "#0d7680",
+      "include": true
+    },
+    {
+      "id": "hi",
+      "name": "高负荷",
+      "color": "#e67700",
+      "include": true
+    },
+    {
+      "id": "burn",
+      "name": "烧焦",
+      "color": "#c92a2a",
+      "include": false
+    },
+    {
+      "id": "up",
+      "name": "升温 / 开炉",
+      "color": "#868e96",
+      "include": false
+    },
+    {
+      "id": "sw",
+      "name": "原料切换",
+      "color": "#7048e8",
+      "include": false
+    },
+    {
+      "id": "stop",
+      "name": "停炉",
+      "color": "#495057",
+      "include": false
+    }
+  ],
+  "regime_rules": [
+    {
+      "regime": "stop",
+      "all": true,
+      "min_hours": 2,
+      "conds": [
+        {
+          "param": "原料流量",
+          "op": "<",
+          "v": 1
+        },
+        {
+          "param": "燃料气流量",
+          "op": "<",
+          "v": 500
+        }
+      ]
+    },
+    {
+      "regime": "burn",
+      "all": true,
+      "min_hours": 2,
+      "conds": [
+        {
+          "param": "原料流量",
+          "op": "<",
+          "v": 5
+        },
+        {
+          "param": "烧焦空气阀开度",
+          "op": ">",
+          "v": 10
+        }
+      ]
+    },
+    {
+      "regime": "up",
+      "all": true,
+      "min_hours": 2,
+      "conds": [
+        {
+          "param": "出口温度",
+          "op": "rise",
+          "v": 10,
+          "hours": 4
+        },
+        {
+          "param": "原料流量",
+          "op": "<",
+          "v": 37
+        }
+      ]
+    },
+    {
+      "regime": "hi",
+      "all": true,
+      "min_hours": 2,
+      "conds": [
+        {
+          "param": "原料流量",
+          "op": ">",
+          "v": 40
+        }
+      ]
+    }
+  ],
+  "features_default": {
+    "燃料气流量": {
+      "cur": true,
+      "lag": 8
+    },
+    "原料流量": {
+      "cur": true,
+      "lag": 12
+    },
+    "炉膛温度": {
+      "cur": true,
+      "mean": 10
+    },
+    "出口温度": {
+      "cur": true,
+      "mean": 10,
+      "std": 10
+    },
+    "炉管压降": {
+      "cur": true,
+      "rate": 30
+    },
+    "烟气氧含量": {
+      "cur": true,
+      "lag": 5,
+      "mean": 10
+    }
+  },
+  "combos": [
+    {
+      "name": "稀释比",
+      "kind": "formula",
+      "expr": "{稀释蒸汽流量} / {原料流量}",
+      "unit": "",
+      "zero": "invalid",
+      "on": true
+    },
+    {
+      "name": "本周期运行天数",
+      "kind": "op",
+      "op": "since",
+      "event": "cycle",
+      "unit": "天",
+      "on": true
+    },
+    {
+      "name": "燃料气单耗",
+      "kind": "formula",
+      "expr": "{燃料气流量} / {原料流量}",
+      "unit": "Nm³/t",
+      "zero": "invalid",
+      "on": false
+    }
+  ],
+  "response": [
+    {
+      "change": "燃料气流量",
+      "pct": 5,
+      "expect": "up",
+      "label": "上升"
+    },
+    {
+      "change": "原料流量",
+      "pct": 5,
+      "expect": "down",
+      "label": "下降",
+      "note": "燃料气不变"
+    },
+    {
+      "change": "稀释蒸汽流量",
+      "pct": 10,
+      "expect": "down",
+      "label": "小幅下降"
+    },
+    {
+      "change": "本周期运行天数",
+      "delta": 10,
+      "expect": "up",
+      "label": "上升（结焦加重）"
+    }
+  ],
+  "monotone": {
+    "燃料气流量": 1
+  },
+  "algorithms": [
+    "base",
+    "lin",
+    "rf",
+    "xgb"
+  ],
+  "detail": [
+    [
+      "变量角色",
+      "燃料气流量、XOT、COT、稀释蒸汽、原料流量、炉膛温度、炉管压降、烟气氧含量、原料密度、TMT 校核点等 12 个"
+    ],
+    [
+      "清洗规则",
+      "温度物理范围、热电偶失效判定、冻结检测、尖峰处理、烧焦期标记"
+    ],
+    [
+      "工况规则",
+      "正常 / 高负荷 / 烧焦 / 升温开炉 / 停炉"
+    ],
+    [
+      "特征模板",
+      "COT 当前值、燃料气滞后 5–10 min、周期内累计运行时间、压降变化率等"
+    ],
+    [
+      "数据集划分",
+      "按运行周期留出"
+    ],
+    [
+      "工艺约束",
+      "壁温 850–1130 ℃，随燃料气增加单调上升"
+    ],
+    [
+      "推荐算法",
+      "基线 + XGBoost + RF，可选 LSTM"
+    ],
+    [
+      "验证报告",
+      "分工况误差、跨周期、跨炉、区间覆盖率"
+    ]
+  ]
+}

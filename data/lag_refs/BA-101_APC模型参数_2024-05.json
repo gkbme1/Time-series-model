@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "type": "APC 模型参数",
+    "name": "BA-101 APC 模型（2024-05，厂商提供）",
+    "furnace": "BA-101"
+  },
+  "FI-1021": {
+    "dead_time": 5,
+    "tau": 6
+  },
+  "FI-1001": {
+    "dead_time": 7,
+    "tau": 9
+  },
+  "FI-1012": {
+    "dead_time": 6,
+    "tau": 8
+  },
+  "TI-1035": {
+    "dead_time": 1,
+    "tau": 4
+  },
+  "HC-1101": {
+    "dead_time": 4,
+    "tau": 5
+  }
+}

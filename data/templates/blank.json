@@ -1,0 +1,18 @@
+{
+  "id": "blank",
+  "name": "空白项目",
+  "desc": "不使用模板，所有配置手动完成",
+  "tags": [
+    "通用"
+  ],
+  "device_type": "任意设备",
+  "calib_label": "自定义",
+  "split": "自定义",
+  "incomplete": true,
+  "detail": [
+    [
+      "说明",
+      "无预置内容"
+    ]
+  ]
+}

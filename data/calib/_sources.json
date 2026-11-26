@@ -1,0 +1,86 @@
+[
+  {
+    "file": null,
+    "tag": "TMT-101",
+    "furnace": "BA-101",
+    "kind": "热电偶",
+    "source": "TMT-101 热电偶",
+    "note": "每小时取整点值，热电偶失效时段自动剔除",
+    "default_use": true,
+    "role": "train",
+    "rows": null,
+    "position": "出口段 1# 管"
+  },
+  {
+    "file": "BA-101_红外测温_2026上半年.csv",
+    "furnace": "BA-101",
+    "kind": "红外",
+    "source": "巡检红外测温",
+    "note": "巡检每班一次 · 2026-07-02 导入 · 已审核",
+    "default_use": true,
+    "role": "train",
+    "rows": 3537
+  },
+  {
+    "file": "BA-101_红外测温_2026三季度.csv",
+    "furnace": "BA-101",
+    "kind": "红外",
+    "source": "巡检红外测温",
+    "note": "巡检每班一次 · 2026-10-08 导入 · 已审核",
+    "default_use": true,
+    "role": "train",
+    "rows": 1909
+  },
+  {
+    "file": "BA-101_红外测温_2026-10.csv",
+    "furnace": "BA-101",
+    "kind": "红外",
+    "source": "巡检红外测温",
+    "note": "巡检系统接口同步，每 30 min",
+    "default_use": true,
+    "role": "train",
+    "rows": 647
+  },
+  {
+    "file": "BA-101_红外测温_2026-11.csv",
+    "furnace": "BA-101",
+    "kind": "红外",
+    "source": "巡检红外测温",
+    "note": "巡检系统接口同步，上线回放时按录入时刻到达",
+    "default_use": false,
+    "role": "online",
+    "rows": 609
+  },
+  {
+    "file": "BA-101_检修测温_2026-03.csv",
+    "furnace": "BA-101",
+    "kind": "红外",
+    "source": "检修测温",
+    "note": "停炉期间测量，不代表运行状态，不建议用于训练",
+    "default_use": false,
+    "role": "train",
+    "rows": 52
+  },
+  {
+    "file": "BA-104_红外测温_2026.csv",
+    "furnace": "BA-104",
+    "kind": "红外",
+    "source": "巡检红外测温",
+    "note": "4 号炉巡检记录，跨炉检验用",
+    "default_use": true,
+    "role": "cross",
+    "rows": 2617
+  },
+  {
+    "file": null,
+    "tag": "TMT-401",
+    "furnace": "BA-104",
+    "kind": "热电偶",
+    "source": "TMT-401 热电偶",
+    "note": "每小时取整点值，热电偶失效时段自动剔除",
+    "default_use": true,
+    "role": "train",
+    "rows": null,
+    "position": "出口段 1# 管"
+  }
+]
