@@ -448,6 +448,10 @@ def approve(s, c: db.Candidate):
     ds = T.latest_ds(s, sc, b.ds_code)
     from . import trainset
     rules = trainset.rules_of(s, sc, ds)
+    # 发布包要自包含：写入训练时实际使用的、完整解析后的加工方式与全部参数的处理规则
+    spec = trainset.spec_for(s, sc, ds, b.config["feats"], b.config["rg"])
+    full_rules = {**copy.deepcopy(spec.rules), "__calib__": rules.get("__calib__") or {}}
+    full_feats = {"params": copy.deepcopy(spec.params), "lags": copy.deepcopy(spec.lags), "combos": copy.deepcopy(spec.combos)}
     appl = copy.deepcopy(c.appl)
     appl["reviewed"] = True
     c.appl = appl
@@ -462,8 +466,8 @@ def approve(s, c: db.Candidate):
     shutil.copy(f"{e.path}/model.pkl", d / "model.pkl")
     pkg = {"code": c.code, "scenario": sc.name, "furnace": sc.furnace, "target": sc.config["target"],
            "experiment": e.code, "batch": b.code, "algo": e.algo, "mode": e.mode, "params": e.params,
-           "dataset": b.ds_code, "rule_code": b.rule_code, "rules": rules, "wc_code": b.wc_code, "regime": b.config["rg"],
-           "f_code": b.f_code, "features": b.config["feats"], "tags": ds.config["tags"],
+           "dataset": b.ds_code, "rule_code": b.rule_code, "rules": full_rules, "wc_code": b.wc_code, "regime": b.config["rg"],
+           "f_code": b.f_code, "features": full_feats, "tags": ds.config["tags"],
            "applicability": appl, "report_code": c.report_code, "report": {k: v for k, v in c.report.items() if k != "chart"},
            "approvers": config.APPROVERS, "published_at": f"{db.now():%Y-%m-%d %H:%M}"}
     (d / "package.json").write_text(json.dumps(pkg, ensure_ascii=False, indent=2, default=str), "utf-8")

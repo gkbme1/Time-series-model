@@ -8,7 +8,7 @@ from __future__ import annotations
 import datetime as dt
 from contextlib import contextmanager
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, create_engine, select
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -137,6 +137,81 @@ class Candidate(Base):
     published_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
 
 
+class Instance(Base):
+    """运行实例：一个已发布模型部署到一台炉。"""
+    __tablename__ = "instances"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"))
+    cand_id: Mapped[int] = mapped_column(ForeignKey("candidates.id"))
+    model_code: Mapped[str] = mapped_column(String(20))
+    furnace: Mapped[str] = mapped_column(String(50))
+    mode: Mapped[str] = mapped_column(String(10))  # online / shadow / stopped
+    period_s: Mapped[int] = mapped_column(Integer, default=60)
+    tag_map: Mapped[dict] = mapped_column(JSON, default=dict)  # 模型位号 → 本炉位号
+    cross: Mapped[dict] = mapped_column(JSON, default=dict)  # 跨炉检验结果
+    state: Mapped[dict] = mapped_column(JSON, default=dict)  # 运行状态：上次运行的模拟时刻、周期锚点等
+    output_tag: Mapped[str] = mapped_column(String(50), default="")
+    created_sim: Mapped[str] = mapped_column(String(20), default="")  # 创建时的模拟时刻
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
+
+
+class Output(Base):
+    """输出表：每个运行实例每个周期一行（不适用时值为空，并记录原因）。"""
+    __tablename__ = "outputs"
+    __table_args__ = (UniqueConstraint("instance_id", "t"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    instance_id: Mapped[int] = mapped_column(ForeignKey("instances.id"), index=True)
+    t: Mapped[str] = mapped_column(String(16), index=True)  # 模拟时刻 YYYY-MM-DD HH:MM
+    value: Mapped[float | None] = mapped_column(nullable=True)
+    p10: Mapped[float | None] = mapped_column(nullable=True)
+    p90: Mapped[float | None] = mapped_column(nullable=True)
+    applicable: Mapped[bool] = mapped_column(default=False)
+    reason_cat: Mapped[str] = mapped_column(String(10), default="")
+    reason: Mapped[str] = mapped_column(String(200), default="")
+    quality: Mapped[str] = mapped_column(String(200), default="正常")
+    regime: Mapped[str] = mapped_column(String(10), default="")
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    shadow: Mapped[bool] = mapped_column(default=False)
+    backfill: Mapped[bool] = mapped_column(default=False)
+    inputs: Mapped[dict] = mapped_column(JSON, default=dict)  # 适用范围变量的当前值（用于漂移分析、实时页）
+
+
+class CalibRecord(Base):
+    """在线阶段手工录入 / 导入的校核值（需审核）。巡检同步与热电偶来源由文件和时序数据随时钟生成。"""
+    __tablename__ = "calib_records"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"))
+    source: Mapped[str] = mapped_column(String(30))  # 手工录入 / 导入：文件名
+    measured_at: Mapped[str] = mapped_column(String(16))
+    position: Mapped[str] = mapped_column(String(30))
+    value: Mapped[float] = mapped_column()
+    instrument: Mapped[str] = mapped_column(String(40), default="")
+    operator: Mapped[str] = mapped_column(String(40), default="")
+    status: Mapped[str] = mapped_column(String(10), default="待审核")
+    entered_at: Mapped[str] = mapped_column(String(16), default="")  # 模拟时刻
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=now)
+
+
+class Sample(Base):
+    """待分析样本库：自动触发，人工复核后才能进入训练集。"""
+    __tablename__ = "samples"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    scenario_id: Mapped[int] = mapped_column(ForeignKey("scenarios.id"))
+    instance_id: Mapped[int] = mapped_column(Integer)
+    key: Mapped[str] = mapped_column(String(80), index=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    t: Mapped[str] = mapped_column(String(16))
+    t_end: Mapped[str] = mapped_column(String(16))
+    reason: Mapped[str] = mapped_column(String(120))
+    detail: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(10), default="待复核")  # 待复核 / 已入训练集 / 已排除
+    cause: Mapped[str] = mapped_column(String(20), default="")
+    memo: Mapped[str] = mapped_column(Text, default="")
+    pairs: Mapped[list] = mapped_column(JSON, default=list)  # [[t, 校核值, 来源]]
+    reviewer: Mapped[str] = mapped_column(String(40), default="")
+    created_sim: Mapped[str] = mapped_column(String(16), default="")
+
+
 class CalibImport(Base):
     """用户导入的校核数据文件（内容另存为 Parquet）。"""
     __tablename__ = "calib_imports"
@@ -182,5 +257,5 @@ def touch_json(obj, attr="config"):
     flag_modified(obj, attr)
 
 
-__all__ = ["Project", "Scenario", "RuleVersion", "Dataset", "CalibImport", "ConfigVersion", "TrainBatch", "Experiment", "Candidate", "session", "init", "select", "now",
+__all__ = ["Project", "Scenario", "RuleVersion", "Dataset", "CalibImport", "ConfigVersion", "TrainBatch", "Experiment", "Candidate", "Instance", "Output", "CalibRecord", "Sample", "session", "init", "select", "now",
            "touch_json"]

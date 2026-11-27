@@ -28,6 +28,7 @@ class Spec:
     regime_rules: list[dict] = field(default_factory=list)
     cycle_mode: str = "both"
     cycle_anchor: str | None = None  # 数据起点之前最近一次周期起点（烧焦 / 停炉结束）
+    event_anchors: dict = field(default_factory=dict)  # 其他事件（如原料切换）在数据起点之前最近一次结束的时刻
 
     @property
     def name2tag(self) -> dict[str, str]:
@@ -112,8 +113,9 @@ def eval_combo_op(cb: dict, labels: np.ndarray, vals: dict[str, np.ndarray], ind
     ev = cb.get("event", "cycle")
     in_ev = F.event_marks(labels, ev, spec.cycle_mode)
     offset = None
-    if ev == "cycle" and spec.cycle_anchor:
-        offset = (index[0] - pd.Timestamp(spec.cycle_anchor)).total_seconds() / 60
+    anchor = spec.cycle_anchor if ev == "cycle" else (spec.event_anchors or {}).get(ev)
+    if anchor:
+        offset = (index[0] - pd.Timestamp(anchor)).total_seconds() / 60
         if offset < 0:
             offset = None
     x = vals.get(cb.get("param")) if cb.get("param") else None

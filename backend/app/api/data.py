@@ -8,7 +8,7 @@ import pandas as pd
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from ..core import calib, quality
 from ..services import context as cx
@@ -355,6 +355,15 @@ def overview(sid: int):
     online = next((c for c in cands if c.life == "已发布"), None)
     if ci >= 5 and online:
         info[5] = f"{online.code} 已发布，待部署（阶段 4）"
+    with db.session() as s3:
+        insts = list(s3.scalars(select(db.Instance).where(db.Instance.scenario_id == sid, db.Instance.mode != "stopped")))
+        n_rec = s3.scalar(select(func.count()).select_from(db.CalibRecord).where(db.CalibRecord.scenario_id == sid)) or 0
+        smp = list(s3.scalars(select(db.Sample).where(db.Sample.scenario_id == sid)))
+    if insts:
+        on = [i for i in insts if i.mode == "online"]
+        info[5] = f"在线 {len(on)} 个 · 影子 {len(insts) - len(on)} 个（" + "、".join(sorted({i.furnace for i in insts})) + "）"
+        info[6] = f"热电偶 / 巡检红外随时钟到达 · 手工 {n_rec} 条"
+        info[7] = f"{sum(1 for x in smp if x.status == '待复核')} 个样本待复核 · 已入训练集 {sum(1 for x in smp if x.status == '已入训练集')} 个"
     model_kpi = None
     if online:
         rep = (online.report or {}).get("rep", {})
@@ -373,7 +382,9 @@ def overview(sid: int):
                    ["工况方案", sc.config.get("regime", {}).get("code") or "—"],
                    ["训练批次", f"{len(bs)} 批 · {len(exps)} 个实验"],
                    ["输入量配置", sc.config.get("features", {}).get("code") or "—"], ["模型版本", "、".join(f"{c.code}（{c.life}）" for c in cands) or "—"],
-                   ["检验报告", f"{sum(1 for c in cands if c.report)} 份" if cands else "—"], ["投用位置", "—"]],
+                   ["检验报告", f"{sum(1 for c in cands if c.report)} 份" if cands else "—"],
+                   ["投用位置", "、".join(f"{i.furnace}（{'在线' if i.mode == 'online' else '影子测试'}）" for i in insts) or "—"],
+                   ["较大偏差 / 待分析样本", f"{sum(1 for x in smp if x.status == '待复核')} 个待复核"]],
     }
 
 

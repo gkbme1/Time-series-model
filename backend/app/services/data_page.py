@@ -55,7 +55,7 @@ def calib_table(scn, imports, labels, idx, period):
     exfn = calib_exclude_fn(scn, idx, period, labels)
     use = d.get("calib_use", {})
     rows, samples = [], []
-    for s in cx.calib_sources(scn.furnace, imports):
+    for s in cx.calib_sources(scn.furnace, imports, scn.id):
         on = bool(use.get(s["id"], s["default_use"]))
         training = not (s["kind"] == "热电偶" and pick == "avg")
         df = cx.source_samples(scn.furnace, s, crules, pick, exfn)

@@ -8,3 +8,5 @@ a.link{color:var(--teal);cursor:pointer;text-decoration:underline}
 .err{color:var(--bad)}
 .tpl{display:flex;flex-direction:column;justify-content:flex-start}
 button:disabled{opacity:.5;cursor:not-allowed}button.pri:disabled{filter:none}
+.hclock{color:#dfe4e9;margin-right:6px}.hclock .note{color:#8b96a1}.hclock .tag{font-size:11px}
+@media(max-width:900px){.hclock{display:none}}

@@ -15,13 +15,16 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import FeaturePage from "./pages/Feature";
 import LabPage from "./pages/Lab";
 import ValidatePage from "./pages/Validate";
+import DeployPage, { ClockBar } from "./pages/Deploy";
+import CheckPage from "./pages/Check";
+import IteratePage from "./pages/Iterate";
 
 const LS = "tsm.project";
 export const tgLabel = (g?: Target) =>
   g ? `${g.name}（${g.type === "fc" ? "预测未来 " + g.horizons.join("/") + " 分钟" : "软测量"}）` : "";
 export const statusClass = (st: string) =>
-  ({ 在线运行: "t-ok", 已发布: "t-ok", 验证中: "t-warn", 特征工程: "t-teal" } as Record<string, string>)[st] || "t-mute";
-const dotColor = (st: string) => ({ 在线运行: "#51cf66", 验证中: "#ffa94d", 特征工程: "#43b3bb" } as Record<string, string>)[st] || "#868e96";
+  ({ 在线运行: "t-ok", 已发布: "t-teal", 验证中: "t-warn", 特征工程: "t-teal" } as Record<string, string>)[st] || "t-mute";
+const dotColor = (st: string) => ({ 在线运行: "#51cf66", 已发布: "#43b3bb", 验证中: "#ffa94d", 特征工程: "#43b3bb" } as Record<string, string>)[st] || "#868e96";
 
 export default function App() {
   const hash = useHash();
@@ -32,6 +35,7 @@ export default function App() {
     return v === null ? -1 : v === "" ? null : +v;
   });
   const projects = useQuery({ queryKey: ["projects"], queryFn: () => api.get<Project[]>("/api/projects") });
+  const stats = useQuery({ queryKey: ["pstats", pid], queryFn: () => api.get<{ pending_by_scenario: Record<string, number> }>(`/api/projects/${pid}/stats`), enabled: !!pid && pid > 0, refetchInterval: 5000 });
   // 首次进入：默认打开最近的项目
   useEffect(() => {
     if (pid === -1 && projects.data) setPid(projects.data[0]?.id ?? null);
@@ -84,6 +88,9 @@ export default function App() {
   else if (route.cur === "feature") page = <FeaturePage sid={sc!.id} key={sc!.id} />;
   else if (route.cur === "lab") page = <LabPage sid={sc!.id} key={sc!.id} />;
   else if (route.cur === "validate") page = <ValidatePage sid={sc!.id} key={sc!.id} />;
+  else if (route.cur === "deploy") page = <DeployPage sid={sc!.id} key={sc!.id} />;
+  else if (route.cur === "check") page = <CheckPage sid={sc!.id} key={sc!.id} />;
+  else if (route.cur === "iterate") page = <IteratePage sid={sc!.id} key={sc!.id} />;
   else page = <Placeholder name={FN_NAME[route.cur]} />;
 
   return (
@@ -95,6 +102,7 @@ export default function App() {
         <button className="hb" onClick={() => setDlg("open")}>打开项目</button>
         <button className="hb" disabled={!proj} onClick={() => { toast("已关闭项目：" + proj!.name); setPid(null); go("home"); }}>关闭项目</button>
         <span className="sp" />
+        <span className="hclock"><ClockBar compact /></span>
         <button className="hb" onClick={() => go("templates")}>场景模板库</button>
       </header>
       <nav className="rail" aria-label="项目树">
@@ -112,7 +120,8 @@ export default function App() {
                   </button>
                   <div className="tk">
                     {FNS.slice(1).map(([k, n]) => (
-                      <button key={k} className={"tn" + (sc?.id === s.id && route.cur === k ? " on" : "")} onClick={() => go(`s${s.id}-${k}`)}>{n}</button>
+                      <button key={k} className={"tn" + (sc?.id === s.id && route.cur === k ? " on" : "")} onClick={() => go(`s${s.id}-${k}`)}>{n}
+                        {k === "iterate" && stats.data?.pending_by_scenario?.[s.id] ? <span className="n">{stats.data.pending_by_scenario[s.id]}</span> : null}</button>
                     ))}
                   </div>
                 </div>

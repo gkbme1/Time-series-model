@@ -176,7 +176,7 @@ def period_mask(idx: pd.DatetimeIndex, start: str, end: str, excludes: list[dict
 # ---------------------------------------------------------------------------
 # 校核来源
 # ---------------------------------------------------------------------------
-def calib_sources(furnace: str, imports: list) -> list[dict]:
+def calib_sources(furnace: str, imports: list, sid: int | None = None) -> list[dict]:
     out = []
     for m in calib.manifest():
         if m["furnace"] != furnace or m.get("role") == "online":
@@ -193,6 +193,15 @@ def calib_sources(furnace: str, imports: list) -> list[dict]:
         out.append({"id": f"imp:{im.id}", "kind": "红外", "name": f"导入：{im.filename}", "position": None,
                     "note": f"{im.created_at:%Y-%m-%d} 导入 · {im.status}" + (f" · {im.note}" if im.note else ""),
                     "default_use": True, "status": im.status, "import_id": im.id})
+    if sid is not None:
+        from ..store import db
+        with db.session() as s:
+            pts = [p for x in s.scalars(db.select(db.Sample).where(db.Sample.scenario_id == sid,
+                                                                    db.Sample.status == "已入训练集")) for p in (x.pairs or [])]
+        if pts:
+            out.append({"id": "samples", "kind": "红外", "name": "跟踪改进：复核后加入训练集的样本", "position": "按目标取法",
+                        "note": f"{len(pts)} 个校核值，来自在线运行中复核通过的样本", "default_use": True, "status": "已审核",
+                        "pairs": pts})
     return out
 
 
@@ -216,7 +225,10 @@ def source_records(s: dict) -> pd.DataFrame:
 
 def source_samples(furnace: str, s: dict, crules: dict, pick: str, exclude_mask_fn) -> pd.DataFrame:
     """一个来源的可用样本（已按校核规则过滤；exclude_mask_fn(t) 返回该时刻是否应剔除）。"""
-    if s["kind"] == "热电偶":
+    if "pairs" in s:
+        df = pd.DataFrame({"t": pd.to_datetime([p[0] for p in s["pairs"]]), "y": [float(p[1]) for p in s["pairs"]], "n": 1})
+        df = df.drop_duplicates("t")
+    elif s["kind"] == "热电偶":
         raw = src().read(furnace, [s["tag"]])[s["tag"]]
         df = calib.tc_samples(raw.to_numpy(), raw.index, crules)
     else:

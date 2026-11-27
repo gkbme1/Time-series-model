@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import config
-from .api import data, projects, stage2, stage3
+from .api import data, projects, stage2, stage3, stage4
 from .services import scenarios
 from .store import db
 
@@ -26,7 +26,12 @@ mimetypes.add_type("application/json", ".json")
 async def lifespan(_app):
     db.init()
     scenarios.seed()
+    from .services import replay, runtime
+    replay.clock._load()
+    replay.on_tick(runtime.tick)
+    replay.start_thread()
     yield
+    replay.stop_thread()
 
 
 app = FastAPI(title="时序建模与软测量平台 Demo", lifespan=lifespan)
@@ -34,6 +39,7 @@ app.include_router(projects.router)
 app.include_router(data.router)
 app.include_router(stage2.router)
 app.include_router(stage3.router)
+app.include_router(stage4.router)
 
 
 @app.get("/api/health")
