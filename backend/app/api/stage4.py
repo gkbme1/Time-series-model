@@ -55,7 +55,11 @@ def put_clock(body: ClockIn):
 
 # ======================================================================= 上线投用
 def inst_dict(s, i: db.Instance) -> dict:
-    last = (i.state or {}).get("last") or {}
+    # 最新值取不晚于回放时钟的最后一条输出（时钟回拨后也一致）
+    o = s.scalars(select(db.Output).where(db.Output.instance_id == i.id, db.Output.t <= f"{clock.now_min():%Y-%m-%d %H:%M}")
+                  .order_by(db.Output.t.desc()).limit(1)).first()
+    last = {"t": o.t, "value": o.value, "applicable": o.applicable, "reason_cat": o.reason_cat, "reason": o.reason,
+            "quality": o.quality} if o else {}
     return {"id": i.id, "furnace": i.furnace, "furnace_name": next((f["name"] for f in SV.furnaces() if f["unit"] == i.furnace), i.furnace),
             "model": i.model_code, "mode": i.mode, "period": i.period_s, "created": i.created_sim, "output_tag": i.output_tag,
             "last": last, "cross": i.cross, "last_t": (i.state or {}).get("last_t")}
@@ -414,7 +418,11 @@ def sample_review(xid: int, body: SampleReviewIn):
 @router.get("/projects/{pid}/stats")
 def project_stats(pid: int):
     with db.session() as s:
-        sids = [x.id for x in s.scalars(select(db.Scenario).where(db.Scenario.project_id == pid))]
+        scs = list(s.scalars(select(db.Scenario).where(db.Scenario.project_id == pid)))
+        for sc in scs:
+            IT.sync(s, sc)
+        s.flush()
+        sids = [x.id for x in scs]
         insts = list(s.scalars(select(db.Instance).where(db.Instance.scenario_id.in_(sids), db.Instance.mode != "stopped")))
         pend = s.scalar(select(func.count()).select_from(db.Sample).where(db.Sample.scenario_id.in_(sids), db.Sample.status == "待复核")) or 0
         per = {}

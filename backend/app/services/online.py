@@ -241,8 +241,16 @@ def valid_detail(s, sc) -> dict:
         k = cats.setdefault(e["cat"], {"cat": e["cat"], "n": 0, "minutes": 0, "examples": []})
         k["n"] += 1
         k["minutes"] += e["minutes"]
-        if len(k["examples"]) < 3 and e["detail"] not in k["examples"]:
-            k["examples"].append(e["detail"])
+    # 每类原因的"例如"：按不输出的分钟数排序，取最多的 3 个具体原因（去掉阈值数字后合并）
+    if not out.empty:
+        bad = out[~out["applicable"]]
+        key = bad["reason"].str.replace(r"（.*?）", "", regex=True)
+        key = key.str.replace(r"^马氏距离.*$", "参数组合超出训练时见过的范围", regex=True).str.strip()
+        for cat, g in bad.assign(k=key).groupby("reason_cat"):
+            k = cats.setdefault(cat, {"cat": cat, "n": 0, "minutes": 0, "examples": []})
+            k["minutes"] = int(len(g))  # 按分钟统计（事件合并只影响"次数"）
+            top = g["k"].value_counts().head(3)
+            k["examples"] = [f"{a} {b} min" for a, b in top.items()]
     return {"events": ev[::-1], "cats": list(cats.values()), "minutes": int(len(out)),
             "share": round(float(out["applicable"].mean() * 100), 1) if not out.empty else None,
             "window": [f"{t0:%Y-%m-%d %H:%M}", f"{t1:%Y-%m-%d %H:%M}"]}

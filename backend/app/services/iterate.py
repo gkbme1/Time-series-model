@@ -31,8 +31,15 @@ def _add(s, sc, inst, kind, t, t_end, reason, detail):
                     detail=detail, created_sim=f"{clock.now_min():%Y-%m-%d %H:%M}"))
 
 
+_last_sync: dict[int, str] = {}
+
+
 def sync(s, sc):
-    """扫描各运行实例，把新触发的情况加入样本库（幂等）。"""
+    """扫描各运行实例，把新触发的情况加入样本库（幂等）。回放时钟没有前进时不重复扫描。"""
+    key = f"{clock.now_min():%Y-%m-%d %H:%M}"
+    if _last_sync.get(sc.id) == key:
+        return
+    _last_sync[sc.id] = key
     insts = list(s.scalars(select(db.Instance).where(db.Instance.scenario_id == sc.id)))
     now = clock.now_min()
     names = {r["id"]: r["name"] for r in sc.config.get("regime", {}).get("classes", [])}

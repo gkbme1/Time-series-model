@@ -356,6 +356,9 @@ def overview(sid: int):
     if ci >= 5 and online:
         info[5] = f"{online.code} 已发布，待部署（阶段 4）"
     with db.session() as s3:
+        from ..services import iterate as IT
+        IT.sync(s3, s3.get(db.Scenario, sid))
+        s3.flush()
         insts = list(s3.scalars(select(db.Instance).where(db.Instance.scenario_id == sid, db.Instance.mode != "stopped")))
         n_rec = s3.scalar(select(func.count()).select_from(db.CalibRecord).where(db.CalibRecord.scenario_id == sid)) or 0
         smp = list(s3.scalars(select(db.Sample).where(db.Sample.scenario_id == sid)))
