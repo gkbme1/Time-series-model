@@ -70,7 +70,7 @@ def page(s, sc) -> dict:
            "defaults": M.DEFAULTS}
     ds = latest_ds(s, sc, t["ds"]) if dss else None
     if ds is None:
-        return {**out, "empty": True}
+        return {**out, "empty": True, "batches": []}
     t["ds"] = ds.code
     df, cols, spec = trainset.table(s, sc, ds)
     cyc = sp.cycles(sc)

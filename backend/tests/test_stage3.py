@@ -108,3 +108,12 @@ def test_stage3_flow(client):
     for k in ("rules", "features", "regime", "applicability", "report_code", "rule_code", "f_code", "wc_code", "dataset"):
         assert pkg[k]
     assert pkg["applicability"]["reviewed"]
+
+
+def test_train_page_without_dataset(client):
+    """还没有生成数据版本时，训练模型页能正常返回（之前缺少 batches 字段导致前端空白）。"""
+    r = client.post("/api/projects/1/scenarios", json={"name": "空场景", "template_id": "cracking_tmt",
+                                                      "furnace": "BA-104", "type": "软测量"}).json()
+    pg = client.get(f"/api/scenarios/{r['id']}/train").json()
+    assert pg["empty"] and pg["batches"] == []
+    assert client.get(f"/api/scenarios/{r['id']}/validate").json() == {"cands": [], "current": None}

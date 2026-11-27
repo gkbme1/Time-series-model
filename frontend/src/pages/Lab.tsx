@@ -28,7 +28,7 @@ export default function LabPage({ sid }: { sid: number }) {
   const toast = useToast();
   const pq = useQuery({ queryKey: ["train", sid], queryFn: () => api.get<Page>(`/api/scenarios/${sid}/train`) });
   const P = pq.data;
-  const running = !!P?.batches[0]?.exps.some((e) => e.status === "排队中" || e.status === "训练中");
+  const running = !!P?.batches?.[0]?.exps.some((e) => e.status === "排队中" || e.status === "训练中");
   const bq = useQuery({
     queryKey: ["batches", sid], queryFn: () => api.get<{ batches: Batch[]; sig: string }>(`/api/scenarios/${sid}/train/batches`),
     enabled: !!P && !P.empty, refetchInterval: (q) => (q.state.data?.batches[0]?.exps.some((e) => e.status === "排队中" || e.status === "训练中") ? 1500 : false),

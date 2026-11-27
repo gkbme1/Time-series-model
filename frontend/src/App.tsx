@@ -11,6 +11,7 @@ import Templates from "./pages/Templates";
 import DataPage from "./pages/Data";
 import Placeholder from "./pages/Placeholder";
 import RegimePage from "./pages/Regime";
+import ErrorBoundary from "./components/ErrorBoundary";
 import FeaturePage from "./pages/Feature";
 import LabPage from "./pages/Lab";
 import ValidatePage from "./pages/Validate";
@@ -134,7 +135,7 @@ export default function App() {
             </div>
           )}
         </div>
-        {page}
+        <ErrorBoundary resetKey={hash}>{page}</ErrorBoundary>
       </main>
       <OpenDialog open={dlg === "open"} onClose={() => setDlg("")} projects={projects.data || []} onOpen={openProject} />
       <NewProjectDialog open={dlg === "new"} onClose={() => setDlg("")} onCreated={(p) => { setPid(p.id); setOpened(new Set(["root"])); setDlg(""); go("proj"); toast("项目已创建，可以添加场景了"); }} />
