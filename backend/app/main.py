@@ -49,4 +49,5 @@ if config.FRONTEND_DIST.exists():
         f = config.FRONTEND_DIST / path
         if path and f.is_file():
             return FileResponse(f)
-        return FileResponse(config.FRONTEND_DIST / "index.html")
+        # 页面入口不缓存：前端重新构建后，浏览器普通刷新就能拿到新版本（js/css 文件名带哈希，可以缓存）
+        return FileResponse(config.FRONTEND_DIST / "index.html", headers={"Cache-Control": "no-cache"})

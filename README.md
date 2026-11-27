@@ -25,12 +25,14 @@ scripts\start.bat
 
 也可以在资源管理器里直接双击 `scripts\start.bat`。
 
-脚本会依次：在 `backend\.venv` 创建虚拟环境并安装依赖 → 构建前端 → 启动服务，几秒后自动打开浏览器
+脚本会依次：在 `backend\.venv` 创建虚拟环境并安装依赖 → 构建前端 → 启动服务，十几秒后自动打开浏览器
 <http://127.0.0.1:8000>。首次运行需要下载依赖，约几分钟；之后再启动只需几秒。按 Ctrl+C 停止。
 
+- 每次启动都会重新构建前端（约 10 秒）；`requirements.txt` 有变化时会自动重新安装 Python 依赖。拉取新代码后直接重新运行即可。
 - 换端口：先 `set PORT=8080`，再运行 `scripts\start.bat`（PowerShell 里写 `$env:PORT=8080`）。
-- 前端代码改动后重新构建：先 `set REBUILD=1`，再运行 `scripts\start.bat`。
+- 想跳过前端构建、加快启动：先 `set SKIP_BUILD=1`。
 - 依赖装坏了：删除 `backend\.venv` 文件夹后重新运行。
+- 想回到初始状态（清空所有项目、数据版本、模型）：停止服务，删除 `var` 文件夹后重新运行。
 
 ### Linux / macOS
 

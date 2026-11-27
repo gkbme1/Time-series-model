@@ -162,7 +162,7 @@
 
 ## 7. 怎么验证
 
-1. 启动服务。Windows 下运行（第一次运行或更新代码后，先执行 `set REBUILD=1`）：
+1. 启动服务（每次启动都会自动重新构建前端）。Windows 下运行：
 
    ```bat
    scripts\start.bat

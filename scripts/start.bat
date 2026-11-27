@@ -1,14 +1,15 @@
 @echo off
-rem One-click start on Windows: install deps -> build frontend -> start server at http://127.0.0.1:8000
-rem Usage:  scripts\start.bat            (set PORT=8080 before running to change the port)
-rem         set REBUILD=1 ^& scripts\start.bat   (rebuild the frontend after code changes)
+rem One-click start on Windows: install / update deps -> build web pages -> start server at http://127.0.0.1:8000
+rem The web pages are rebuilt on every start, so pulled code changes always take effect.
+rem Options (set before running):  set PORT=8080      change the port
+rem                                set SKIP_BUILD=1   skip rebuilding the web pages (faster start)
 setlocal
 cd /d "%~dp0.."
 if "%PORT%"=="" set "PORT=8000"
 set "VENV=backend\.venv"
 set "PY=%VENV%\Scripts\python.exe"
 
-if exist "%PY%" goto :deps_ok
+if exist "%PY%" goto :venv_ok
 echo [1/4] Creating Python virtual environment in %VENV% ...
 where py >nul 2>nul
 if errorlevel 1 (
@@ -22,13 +23,16 @@ if errorlevel 1 (
   echo Python 3.11 or newer is required. Delete %VENV% and install a newer Python from https://www.python.org/downloads/
   goto :fail
 )
-echo [2/4] Installing Python packages, this takes a few minutes the first time ...
 "%PY%" -m pip install --upgrade pip
+:venv_ok
+
+rem Install Python packages when requirements.txt changed since the last install
+fc /b "backend\requirements.txt" "%VENV%\requirements.installed" >nul 2>nul
+if not errorlevel 1 goto :deps_ok
+echo [2/4] Installing Python packages, this takes a few minutes the first time ...
 "%PY%" -m pip install -r backend\requirements.txt
-if errorlevel 1 (
-  rmdir /s /q "%VENV%"
-  goto :fail
-)
+if errorlevel 1 goto :fail
+copy /y "backend\requirements.txt" "%VENV%\requirements.installed" >nul
 :deps_ok
 
 if exist "data\timeseries\BA-101.parquet" goto :data_ok
@@ -37,18 +41,24 @@ echo [3/4] Generating demo data ...
 if errorlevel 1 goto :fail
 :data_ok
 
-if "%REBUILD%"=="1" goto :build
-if exist "frontend\dist\index.html" goto :run
-:build
+if "%SKIP_BUILD%"=="1" if exist "frontend\dist\index.html" goto :run
 where npm >nul 2>nul
 if errorlevel 1 (
+  if exist "frontend\dist\index.html" (
+    echo Node.js not found, using the existing web pages build. Install Node.js 18+ to rebuild: https://nodejs.org/
+    goto :run
+  )
   echo Node.js 18 or newer is required to build the web pages: https://nodejs.org/
   goto :fail
 )
 echo [4/4] Building the web pages ...
 pushd frontend
+fc /b "package-lock.json" "node_modules\package-lock.installed" >nul 2>nul
+if not errorlevel 1 goto :npm_ok
 call npm install --no-audit --no-fund
 if errorlevel 1 (popd & goto :fail)
+copy /y "package-lock.json" "node_modules\package-lock.installed" >nul
+:npm_ok
 call npm run build
 if errorlevel 1 (popd & goto :fail)
 popd
